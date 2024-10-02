@@ -119,14 +119,27 @@ function declareNamedTypes(ast: AST, options: Options, rootASTName: string, proc
     case 'ENUM':
       return ''
     case 'INTERFACE':
-      return getSuperTypesAndParams(ast)
+      const superclass = getSuperTypesAndParams(ast)
         .map(
           ast =>
             (ast.standaloneName === rootASTName || options.declareExternallyReferenced) &&
             declareNamedTypes(ast, options, rootASTName, processed),
         )
         .filter(Boolean)
-        .join('\n')
+        .join('\n');
+	    const code = [
+        hasStandaloneName(ast) ? generateStandaloneType(ast, options) : undefined,
+        ast.params
+          .map(ast => declareNamedTypes(ast, options, rootASTName, processed))
+          .filter(Boolean)
+          .join('\n'),
+        'spreadParam' in ast && ast.spreadParam
+          ? declareNamedTypes(ast.spreadParam, options, rootASTName, processed)
+          : undefined,
+        ]
+        .filter(Boolean)
+        .join('\n');
+   	  return superclass+"\n"+code;
     case 'INTERSECTION':
     case 'TUPLE':
     case 'UNION':
